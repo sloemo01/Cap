@@ -61,6 +61,7 @@ windows = { workspace = true, features = [
     "Win32_Graphics_Direct3D12",
     "Win32_Graphics_Dxgi",
     "Win32_Graphics_Dxgi_Common",
+    "Win32_System_Registry",
     "Win32_System_Threading",
 ] }
 windows_0_58 = { package = "windows", version = "0.58", features = [

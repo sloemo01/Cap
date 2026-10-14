@@ -32,6 +32,9 @@ use std::sync::{
 use std::{path::PathBuf, time::Instant};
 use tokio::sync::mpsc;
 
+#[cfg(target_os = "windows")]
+mod adapter_luid;
+mod adapter_preference;
 pub mod camera3d;
 pub mod composite_frame;
 mod coord;
@@ -270,6 +273,24 @@ fn bundled_dxc_paths() -> Option<(PathBuf, PathBuf)> {
         .find(|(dxc_path, dxil_path)| dxc_path.is_file() && dxil_path.is_file())
 }
 
+/// Requests a hardware adapter, preferring an explicit GPU choice made for
+/// this executable in Windows graphics settings over the generic
+/// high-performance request.
+async fn request_hardware_adapter(instance: &wgpu::Instance) -> Option<wgpu::Adapter> {
+    if let Some(adapter) = adapter_preference::preferred_adapter(instance) {
+        return Some(adapter);
+    }
+
+    instance
+        .request_adapter(&wgpu::RequestAdapterOptions {
+            power_preference: wgpu::PowerPreference::HighPerformance,
+            force_fallback_adapter: false,
+            compatible_surface: None,
+        })
+        .await
+        .ok()
+}
+
 pub async fn create_wgpu_instance() -> wgpu::Instance {
     create_wgpu_instance_sync()
 }
@@ -281,14 +302,7 @@ pub async fn probe_software_adapter() -> Option<(bool, String)> {
     let hardware_adapter = if force_software_adapter {
         None
     } else {
-        instance
-            .request_adapter(&wgpu::RequestAdapterOptions {
-                power_preference: wgpu::PowerPreference::HighPerformance,
-                force_fallback_adapter: false,
-                compatible_surface: None,
-            })
-            .await
-            .ok()
+        request_hardware_adapter(&instance).await
     };
 
     let adapter = match hardware_adapter {
@@ -2166,14 +2180,7 @@ pub async fn create_shared_device() -> Result<SharedWgpuDevice, RenderingError> 
     let hardware_adapter = if force_software_adapter {
         None
     } else {
-        instance
-            .request_adapter(&wgpu::RequestAdapterOptions {
-                power_preference: wgpu::PowerPreference::HighPerformance,
-                force_fallback_adapter: false,
-                compatible_surface: None,
-            })
-            .await
-            .ok()
+        request_hardware_adapter(&instance).await
     };
 
     let (adapter, is_software_adapter) = if let Some(adapter) = hardware_adapter {

@@ -5,7 +5,7 @@ use windows::Win32::{
 };
 
 #[cfg(target_os = "windows")]
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct AdapterLuid {
     pub low: u32,
     pub high: i32,
@@ -55,7 +55,7 @@ pub fn detect_adapter_luid_for_wgpu(adapter: &wgpu::Adapter) -> Option<AdapterLu
 }
 
 #[cfg(not(target_os = "windows"))]
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct AdapterLuid {
     pub low: u32,
     pub high: i32,
